@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Venture Factory — Live</title>
+<style>
+  :root{
+    --bg:#F2F3F5; --card:#FFFFFF; --ink:#1B2129; --muted:#5C6572; --line:#E1E4E9;
+    --accent:#B96E00; --accent-soft:#F3E3C8;
+    --ok:#237E56; --ok-soft:#DDF0E6; --warn:#996E00; --warn-soft:#F5EBCC; --bad:#B23A3A; --bad-soft:#F6DEDE;
+    --rail:#D8DBE0;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg:#12151A; --card:#1A1F27; --ink:#E8EAED; --muted:#98A1AD; --line:#2A313C;
+    --accent:#F0A63C; --accent-soft:#3A2E17;
+    --ok:#46C489; --ok-soft:#16331F; --warn:#E5B458; --warn-soft:#38301A; --bad:#E77C7C; --bad-soft:#3A2020;
+    --rail:#2A313C;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#12151A; --card:#1A1F27; --ink:#E8EAED; --muted:#98A1AD; --line:#2A313C;
+    --accent:#F0A63C; --accent-soft:#3A2E17;
+    --ok:#46C489; --ok-soft:#16331F; --warn:#E5B458; --warn-soft:#38301A; --bad:#E77C7C; --bad-soft:#3A2020;
+    --rail:#2A313C;
+  }
+  :root[data-theme="light"]{
+    --bg:#F2F3F5; --card:#FFFFFF; --ink:#1B2129; --muted:#5C6572; --line:#E1E4E9;
+    --accent:#B96E00; --accent-soft:#F3E3C8;
+    --ok:#237E56; --ok-soft:#DDF0E6; --warn:#996E00; --warn-soft:#F5EBCC; --bad:#B23A3A; --bad-soft:#F6DEDE;
+    --rail:#D8DBE0;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,"Segoe UI",Roboto,sans-serif;margin:0;padding:20px}
+  .wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
+  .lbl{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  header h1{font-size:20px;font-weight:700;margin:0;letter-spacing:-.01em}
+  .spacer{flex:1}
+  .stamp{font-size:12px;color:var(--muted)}
+  .pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600}
+  .pill .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+  @media (prefers-reduced-motion: no-preference){
+    .pill.ok .dot{animation:pulse 2.2s ease-in-out infinite}
+    @keyframes pulse{50%{opacity:.35}}
+  }
+  .pill.ok{background:var(--ok-soft);color:var(--ok)}
+  .pill.warn{background:var(--warn-soft);color:var(--warn)}
+  .pill.bad{background:var(--bad-soft);color:var(--bad)}
+
+  .banner{border:1px solid var(--line);border-left:3px solid var(--warn);background:var(--card);border-radius:8px;padding:10px 14px;font-size:13px;display:none}
+  .banner.bad{border-left-color:var(--bad)}
+
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+  .kpi b{font-size:24px;font-weight:600;letter-spacing:-.02em}
+  .kpi small{font-size:12px;color:var(--muted)}
+
+  .ventures{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+  .vcard{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px}
+  .vhead{display:flex;align-items:baseline;gap:10px}
+  .vhead h2{margin:0;font-size:16px;font-weight:700}
+  .vhead .fase{margin-left:auto;font-size:12px;font-weight:600;color:var(--accent)}
+  .vhead .fase.done{color:var(--ok)}
+  .rail{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+  .rail i{height:5px;border-radius:3px;background:var(--rail)}
+  .rail i.on{background:var(--accent)}
+  .rail i.ready{background:var(--ok)}
+  .railtags{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+  .railtags span.cur{color:var(--accent);font-weight:700}
+  .chk{display:flex;align-items:center;gap:10px}
+  .bar{flex:1;height:7px;border-radius:4px;background:var(--rail);overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--accent);border-radius:4px;transition:width .4s}
+  .rows{display:flex;flex-direction:column;gap:8px;font-size:13px}
+  .rows .r{display:flex;flex-direction:column;gap:1px}
+  .rows .r span{color:var(--muted)}
+  .vurl a{color:var(--accent);font-size:13px;text-decoration:none;font-weight:600}
+  .vurl a:hover,.vurl a:focus-visible{text-decoration:underline}
+
+  .cols{display:grid;grid-template-columns:1fr 1.4fr;gap:12px}
+  @media (max-width:720px){.cols{grid-template-columns:1fr}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px}
+  .panel h3{margin:0;font-size:13px;font-weight:700}
+  .gate{display:flex;flex-direction:column;gap:1px;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+  .gate:first-of-type{border-top:none}
+  .gate b{font-weight:600}
+  .gate small{color:var(--muted)}
+  .gate .tag{font-size:10.5px;color:var(--warn);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+
+  .feed{display:flex;flex-direction:column}
+  .ev{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:13px;align-items:baseline}
+  .ev:first-of-type{border-top:none}
+  .ev time{color:var(--muted);font-size:11.5px;white-space:nowrap;min-width:74px}
+  .chip{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border-radius:4px;padding:1px 6px;white-space:nowrap}
+  .chip.acc{background:var(--accent-soft);color:var(--accent)}
+  .chip.ok{background:var(--ok-soft);color:var(--ok)}
+  .chip.warn{background:var(--warn-soft);color:var(--warn)}
+  .chip.bad{background:var(--bad-soft);color:var(--bad)}
+  .chip.mut{background:var(--rail);color:var(--muted)}
+  .empty{color:var(--muted);font-size:13px}
+
+  .icard{border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:9px}
+  .ihead{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+  .ihead>b{font-size:14px}
+  .conf{margin-left:auto;display:flex;align-items:center;gap:8px}
+  .conf b{font-size:17px}
+  .conf .bar{width:64px}
+  .icard p{margin:0;font-size:13px;color:var(--ink)}
+  details.inf summary{cursor:pointer;font-size:12.5px;color:var(--accent);font-weight:600;list-style-position:inside}
+  details.inf div{white-space:pre-wrap;font-size:12.5px;line-height:1.55;color:var(--muted);margin-top:6px;border-left:2px solid var(--line);padding-left:10px}
+  .iacts{display:flex;gap:8px;flex-wrap:wrap}
+  .iacts button{font:600 12.5px/1 -apple-system,"Segoe UI",Roboto,sans-serif;border-radius:7px;padding:8px 14px;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--ink)}
+  .iacts button.pri{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+  .iacts button.danger{color:var(--bad)}
+  .iacts button:disabled{opacity:.45;cursor:default}
+  .iacts button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .imini{display:flex;gap:10px;align-items:baseline;padding:7px 0;border-top:1px solid var(--line);font-size:13px}
+  .imini:first-of-type{border-top:none}
+  .imini .conf-s{margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap}
+  footer{color:var(--muted);font-size:12px;text-align:center;padding:6px 0 14px}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>🏭 Venture Factory</h1>
+    <span id="driver" class="pill warn"><span class="dot"></span><span id="driver-txt">Conectando…</span></span>
+    <span class="spacer"></span>
+    <span id="stamp" class="stamp"></span>
+    <button id="btn-r" onclick="manualRefresh()" title="Refrescar ahora" style="border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:7px;padding:5px 10px;cursor:pointer;font-size:13px">↻</button>
+  </header>
+
+  <div id="banner" class="banner"></div>
+
+  <div class="kpis">
+    <div class="kpi"><span class="lbl">Última corrida</span><b id="k-ultima" class="mono">—</b><small id="k-ultima-sub"></small></div>
+    <div class="kpi"><span class="lbl">Corridas totales</span><b id="k-corridas" class="mono">—</b><small>del driver autónomo</small></div>
+    <div class="kpi"><span class="lbl">Gates abiertos</span><b id="k-gates" class="mono">—</b><small>esperan a Jose (con workaround)</small></div>
+    <div class="kpi"><span class="lbl">Ventures READY</span><b id="k-ready" class="mono">—</b><small>listos para tu revisión</small></div>
+    <div class="kpi"><span class="lbl">Ideas por decidir</span><b id="k-ideas" class="mono">—</b><small>evaluadas por el lab</small></div>
+  </div>
+
+  <div id="ventures" class="ventures"></div>
+
+  <div class="panel"><h3>💡 Lab de ideas — equipo de 500</h3>
+    <div id="ideas-pend"><p class="empty">El lab aún no evalúa ideas — la primera sesión del equipo está en curso.</p></div>
+    <div id="ideas-proc"></div>
+    <div id="ideas-dec"></div>
+  </div>
+
+  <div class="cols">
+    <div class="panel"><h3>🚧 Human gates</h3><div id="gates"><p class="empty">Sin datos aún.</p></div></div>
+    <div class="panel"><h3>📡 Actividad del driver</h3><div id="feed" class="feed"><p class="empty">Sin eventos aún.</p></div></div>
+  </div>
+
+  <footer>Se actualiza solo cada minuto · servido por edge function · fuente: <span class="mono">factory.*</span> · kill switch: <span class="mono">venture-factory/KILL_SWITCH</span> en la mini</footer>
+</div>
+
+<script>
+const FASES = ["Espec","Infra","Core","Growth","Ops","Ready"];
+const CHIP = {deploy:"ok", ready:"ok", error:"bad", gate:"warn", fase:"acc", corrida:"mut", commit:"mut", idea:"acc"};
+const ICHIP = {nueva:"mut", en_lab:"warn", evaluada:"acc", guardada:"acc", encolada:"ok", en_factory:"ok", descartada:"mut"};
+const INAME = {nueva:"en cola del lab", en_lab:"en el lab", evaluada:"evaluada", guardada:"guardada", encolada:"encolada → factory", en_factory:"en el factory", descartada:"descartada"};
+
+const $ = id => document.getElementById(id);
+let lastGood = null, lastStoredAt = null, unsub = null;
+
+function rel(iso){
+  const s = (Date.now() - new Date(iso).getTime())/1000;
+  if (s < 90) return "hace 1 min";
+  if (s < 3600) return "hace " + Math.round(s/60) + " min";
+  if (s < 86400) return "hace " + (s/3600).toFixed(s<7200?1:0).replace(".0","") + " h";
+  return "hace " + Math.round(s/86400) + " d";
+}
+function esc(t){ const d=document.createElement("span"); d.textContent=t==null?"":String(t); return d.innerHTML; }
+
+function setDriver(cls, txt){
+  const p = $("driver"); p.className = "pill " + cls; $("driver-txt").textContent = txt;
+}
+function banner(msg, bad){
+  const b = $("banner");
+  if (!msg){ b.style.display="none"; return; }
+  b.style.display="block"; b.className = "banner" + (bad ? " bad" : ""); b.textContent = msg;
+}
+
+function render(dash){
+  const est = dash.estado || {}, g = est.global || {};
+  const ventures = Object.keys(est).filter(k => k !== "global").map(k => ({slug:k, ...est[k]}));
+
+  // Driver salud: kill switch > atraso > ok
+  const mins = g.ultima_corrida ? (Date.now() - new Date(g.ultima_corrida).getTime())/60000 : null;
+  if (g.kill_switch) setDriver("bad", "Kill switch ACTIVO");
+  else if (mins != null && mins > 130) setDriver("warn", "Driver atrasado (" + Math.round(mins/60) + " h sin correr)");
+  else setDriver("ok", "Driver activo");
+
+  $("k-ultima").textContent = g.ultima_corrida ? rel(g.ultima_corrida).replace("hace ","") : "—";
+  $("k-ultima-sub").textContent = g.ultima_corrida ? "próxima ≤ 60 min" : "";
+  $("k-corridas").textContent = g.corridas_total ?? "—";
+  const gates = g.gates_abiertos || [];
+  $("k-gates").textContent = gates.length;
+  $("k-ready").textContent = ventures.filter(v => (v.fase|0) >= 5).length + " / " + ventures.length;
+
+  $("ventures").innerHTML = ventures.map(v => {
+    const fase = v.fase|0, done = v.checklist_done|0, total = v.checklist_total|0;
+    const pct = total ? Math.round(done/total*100) : 0;
+    return `<div class="vcard">
+      <div class="vhead"><h2>${esc(v.nombre || v.slug)}</h2>
+        <span class="fase ${fase>=5?"done":""}">${fase>=5?"🎉 READY":"Fase "+fase+" · "+esc(FASES[fase]||"")}</span></div>
+      <div><div class="rail">${FASES.map((_,i)=>`<i class="${i<=fase ? (fase>=5?"ready":"on") : ""}"></i>`).join("")}</div>
+      <div class="railtags">${FASES.map((f,i)=>`<span class="${i===fase?"cur":""}">${f}</span>`).join("")}</div></div>
+      <div class="chk"><span class="lbl">Checklist</span><div class="bar"><i style="width:${pct}%"></i></div>
+        <span class="mono" style="font-size:12px">${done}/${total}</span></div>
+      <div class="rows">
+        <div class="r"><span class="lbl">Último hecho</span>${esc(v.ultimo_hecho || "—")}
+          ${v.actualizado_at?`<span style="font-size:11.5px">${rel(v.actualizado_at)}</span>`:""}</div>
+        <div class="r"><span class="lbl">Próximo foco</span>${esc(v.proximo_foco || "—")}</div>
+      </div>
+      ${v.url ? `<div class="vurl"><a href="${esc(v.url)}" target="_blank" rel="noopener">Ver deploy ↗</a></div>` : ""}
+    </div>`;
+  }).join("") || `<p class="empty">Sin ventures registrados aún.</p>`;
+
+  $("gates").innerHTML = gates.length ? gates.map(x =>
+    `<div class="gate"><span class="tag">${esc(x.venture)}</span><b>${esc(x.que)}</b>
+     <small>Mientras: ${esc(x.workaround)}</small></div>`).join("")
+    : `<p class="empty">✅ Nada pendiente de tu lado.</p>`;
+
+  const ideas = dash.ideas || [];
+  const pend = ideas.filter(i => i.estado === "evaluada");
+  const proc = ideas.filter(i => i.estado === "nueva" || i.estado === "en_lab");
+  const dec  = ideas.filter(i => ["guardada","encolada","en_factory","descartada"].includes(i.estado));
+  $("k-ideas").textContent = pend.length;
+
+  const confCol = c => c >= 70 ? "var(--ok)" : c >= 40 ? "var(--accent)" : "var(--bad)";
+  $("ideas-pend").innerHTML = pend.length ? pend.map(i => `
+    <div class="icard"><div class="ihead"><b>${esc(i.titulo)}</b>
+      <span class="conf"><div class="bar"><i style="width:${i.confianza|0}%;background:${confCol(i.confianza|0)}"></i></div>
+      <b class="mono" style="color:${confCol(i.confianza|0)}">${i.confianza|0}%</b></span></div>
+      <p>${esc(i.resumen)}</p>
+      ${i.informe ? `<details class="inf"><summary>Informe del lab</summary><div>${esc(i.informe)}</div></details>` : ""}
+      <div class="iacts">
+        <button class="pri" onclick="decide(${i.id},'encolada',this)">→ Encolar al factory</button>
+        <button onclick="decide(${i.id},'guardada',this)">Guardar</button>
+        <button class="danger" onclick="decide(${i.id},'descartada',this)">Descartar</button>
+      </div></div>`).join("")
+    : `<p class="empty">Sin ideas pendientes de decisión${proc.length ? " — el lab está trabajando" : " — la próxima sesión del equipo corre a las 02:00"}.</p>`;
+
+  $("ideas-proc").innerHTML = proc.length ? proc.map(i =>
+    `<div class="imini"><span class="chip ${ICHIP[i.estado]}">${INAME[i.estado]}</span><span>${esc(i.titulo)}</span></div>`).join("") : "";
+
+  $("ideas-dec").innerHTML = dec.length ? dec.map(i => `
+    <div class="imini"><span class="chip ${ICHIP[i.estado]}">${INAME[i.estado]}</span><span>${esc(i.titulo)}</span>
+      ${i.estado === "guardada" ? `<span class="iacts" style="margin-left:auto">
+        <button class="pri" onclick="decide(${i.id},'encolada',this)">Encolar</button>
+        <button class="danger" onclick="decide(${i.id},'descartada',this)">Descartar</button></span>`
+      : `<span class="conf-s mono">${i.confianza != null ? (i.confianza|0)+"%" : ""}</span>`}
+    </div>`).join("") : "";
+
+  const evs = dash.eventos || [];
+  $("feed").innerHTML = evs.length ? evs.map(e =>
+    `<div class="ev"><time class="mono">${rel(e.ts)}</time>
+     <span class="chip ${CHIP[e.tipo]||"mut"}">${esc(e.tipo)}</span>
+     <span>${e.venture?`<b>${esc(e.venture)}</b> · `:""}${esc(e.detalle)}</span></div>`).join("")
+    : `<p class="empty">Sin eventos aún.</p>`;
+}
+
+function stamp(storedAt){
+  lastStoredAt = storedAt || Date.now();
+  $("stamp").textContent = "Actualizado " + rel(new Date(lastStoredAt).toISOString());
+}
+setInterval(() => { if (lastStoredAt) $("stamp").textContent = "Actualizado " + rel(new Date(lastStoredAt).toISOString()); if (lastGood) render(lastGood); }, 30000);
+
+window.onerror = (msg) => { banner("Error del panel: " + msg, true); };
+const TOKEN = new URLSearchParams(location.search).get("t") || "";
+const API = "https://wzkqaxgsqgbokkmxarbd.supabase.co/functions/v1/factory-dashboard";
+
+async function fetchData(){
+  try {
+    const r = await fetch(API + "?t=" + encodeURIComponent(TOKEN) + "&data=1", { cache: "no-store" });
+    if (r.status === 401){ setDriver("bad","Sin acceso"); banner("Token inválido — revisá que el link tenga ?t=…", true); return; }
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const dash = await r.json();
+    lastGood = dash; render(dash); banner(null); stamp(Date.now());
+  } catch(e){
+    if (lastGood) banner("Sin conexión momentánea — mostrando últimos datos.");
+    else banner("No pude cargar datos (" + (e && e.message || e) + "). Reintento en 60s…", true);
+  }
+}
+
+const VERBO = {encolada:"encoló al factory", guardada:"guardó", descartada:"descartó"};
+async function decide(id, nuevo, btn){
+  const card = btn.closest(".icard, .imini");
+  card.querySelectorAll("button").forEach(b => b.disabled = true);
+  try {
+    const r = await fetch(API + "?t=" + encodeURIComponent(TOKEN), {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: id, estado: nuevo })
+    });
+    const j = await r.json();
+    if (!r.ok || !j.ok) throw new Error(j.error || ("HTTP " + r.status));
+    if (j.ya_decidida) banner("Esa idea ya fue decidida en otro lado — refrescando.");
+    await fetchData();
+  } catch(e){
+    card.querySelectorAll("button").forEach(b => b.disabled = false);
+    banner("No se pudo registrar la decisión (" + (e && e.message || e) + "). Reintentá.", true);
+  }
+}
+window.decide = decide;
+
+function manualRefresh(){ banner(null); fetchData(); }
+window.manualRefresh = manualRefresh;
+
+setInterval(() => { if (!document.hidden) fetchData(); }, 60000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) fetchData(); });
+fetchData();
+
+</script>
+</html>
