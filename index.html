@@ -101,6 +101,8 @@
   .empty{color:var(--muted);font-size:13px}
 
   .icard{border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:9px}
+  .icard.dim{opacity:.5}
+  .icard.act{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
   .ihead{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
   .ihead>b{font-size:14px}
   .conf{margin-left:auto;display:flex;align-items:center;gap:8px}
@@ -143,9 +145,8 @@
   <div id="ventures" class="ventures"></div>
 
   <div class="panel"><h3>💡 Lab de ideas — equipo de 500</h3>
-    <div id="ideas-pend"><p class="empty">El lab aún no evalúa ideas — la primera sesión del equipo está en curso.</p></div>
-    <div id="ideas-proc"></div>
-    <div id="ideas-dec"></div>
+    <div id="ideas-sum" class="lbl" style="font-weight:600"></div>
+    <div id="ideas-list" style="display:flex;flex-direction:column;gap:9px"><p class="empty">El lab aún no evalúa ideas — la primera sesión del equipo está en curso.</p></div>
   </div>
 
   <div class="cols">
@@ -226,34 +227,49 @@ function render(dash){
 
   const ideas = dash.ideas || [];
   const pend = ideas.filter(i => i.estado === "evaluada");
-  const proc = ideas.filter(i => i.estado === "nueva" || i.estado === "en_lab");
-  const dec  = ideas.filter(i => ["guardada","encolada","en_factory","descartada"].includes(i.estado));
   $("k-ideas").textContent = pend.length;
 
   const confCol = c => c >= 70 ? "var(--ok)" : c >= 40 ? "var(--accent)" : "var(--bad)";
-  $("ideas-pend").innerHTML = pend.length ? pend.map(i => `
-    <div class="icard"><div class="ihead"><b>${esc(i.titulo)}</b>
-      <span class="conf"><div class="bar"><i style="width:${i.confianza|0}%;background:${confCol(i.confianza|0)}"></i></div>
-      <b class="mono" style="color:${confCol(i.confianza|0)}">${i.confianza|0}%</b></span></div>
+
+  // Orden único por % de éxito (desc). Sin evaluar (nueva/en_lab) al final; descartadas hasta el fondo.
+  const RANK = { descartada: 2, nueva: 1, en_lab: 1 };
+  const sorted = ideas.slice().sort((a, b) => {
+    const ra = RANK[a.estado] || 0, rb = RANK[b.estado] || 0;
+    if (ra !== rb) return ra - rb;
+    const ca = a.confianza == null ? -1 : a.confianza, cb = b.confianza == null ? -1 : b.confianza;
+    return cb - ca;
+  });
+
+  const cnt = ideas.reduce((m, i) => (m[i.estado] = (m[i.estado] || 0) + 1, m), {});
+  $("ideas-sum").textContent = ideas.length
+    ? `${ideas.length} ideas · ${cnt.en_factory || 0} en construcción · ${cnt.encolada || 0} en cola → factory · ${pend.length} por decidir · ${(cnt.nueva || 0) + (cnt.en_lab || 0)} esperando al lab` + (cnt.descartada ? ` · ${cnt.descartada} descartadas` : "")
+    : "";
+
+  // Acciones contextuales según estado (el POST acepta cualquier transición de estado)
+  const actionsFor = i => {
+    const b = (est, txt, cls = "") => `<button class="${cls}" onclick="decide(${i.id},'${est}',this)">${txt}</button>`;
+    switch (i.estado) {
+      case "evaluada":   return b("encolada", "→ Encolar al factory", "pri") + b("guardada", "Guardar") + b("descartada", "Descartar", "danger");
+      case "guardada":   return b("encolada", "Encolar", "pri") + b("descartada", "Descartar", "danger");
+      case "encolada":   return b("guardada", "⏸ Pausar") + b("descartada", "Cancelar", "danger");
+      case "descartada": return b("guardada", "↩ Recuperar");
+      default:           return ""; // nueva, en_lab, en_factory: sin acciones (esperan al lab o ya se construyen)
+    }
+  };
+
+  $("ideas-list").innerHTML = sorted.length ? sorted.map(i => {
+    const c = i.confianza;
+    const confHtml = c == null
+      ? `<span class="conf"><span class="conf-s">sin evaluar</span></span>`
+      : `<span class="conf"><div class="bar"><i style="width:${c|0}%;background:${confCol(c|0)}"></i></div><b class="mono" style="color:${confCol(c|0)}">${c|0}%</b></span>`;
+    const acts = actionsFor(i);
+    return `<div class="icard${i.estado === "descartada" ? " dim" : ""}${i.estado === "evaluada" ? " act" : ""}">
+      <div class="ihead"><span class="chip ${ICHIP[i.estado]}">${INAME[i.estado]}</span><b>${esc(i.titulo)}</b>${confHtml}</div>
       <p>${esc(i.resumen)}</p>
       ${i.informe ? `<details class="inf"><summary>Informe del lab</summary><div>${esc(i.informe)}</div></details>` : ""}
-      <div class="iacts">
-        <button class="pri" onclick="decide(${i.id},'encolada',this)">→ Encolar al factory</button>
-        <button onclick="decide(${i.id},'guardada',this)">Guardar</button>
-        <button class="danger" onclick="decide(${i.id},'descartada',this)">Descartar</button>
-      </div></div>`).join("")
-    : `<p class="empty">Sin ideas pendientes de decisión${proc.length ? " — el lab está trabajando" : " — la próxima sesión del equipo corre a las 02:00"}.</p>`;
-
-  $("ideas-proc").innerHTML = proc.length ? proc.map(i =>
-    `<div class="imini"><span class="chip ${ICHIP[i.estado]}">${INAME[i.estado]}</span><span>${esc(i.titulo)}</span></div>`).join("") : "";
-
-  $("ideas-dec").innerHTML = dec.length ? dec.map(i => `
-    <div class="imini"><span class="chip ${ICHIP[i.estado]}">${INAME[i.estado]}</span><span>${esc(i.titulo)}</span>
-      ${i.estado === "guardada" ? `<span class="iacts" style="margin-left:auto">
-        <button class="pri" onclick="decide(${i.id},'encolada',this)">Encolar</button>
-        <button class="danger" onclick="decide(${i.id},'descartada',this)">Descartar</button></span>`
-      : `<span class="conf-s mono">${i.confianza != null ? (i.confianza|0)+"%" : ""}</span>`}
-    </div>`).join("") : "";
+      ${acts ? `<div class="iacts">${acts}</div>` : ""}
+    </div>`;
+  }).join("") : `<p class="empty">Sin ideas todavía — la próxima sesión del equipo corre a las 02:00.</p>`;
 
   const evs = dash.eventos || [];
   $("feed").innerHTML = evs.length ? evs.map(e =>
