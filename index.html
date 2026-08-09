@@ -166,8 +166,15 @@ const INAME = {nueva:"en cola del lab", en_lab:"en el lab", evaluada:"evaluada",
 const $ = id => document.getElementById(id);
 let lastGood = null, lastStoredAt = null, unsub = null;
 
+// Normaliza timestamps a Date robusto: Postgres nativo ("YYYY-MM-DD HH:MM:SS+00")
+// e ISO ("...T...+00:00") → mismo Date correcto en Chrome, Safari e iPhone (evita Invalid Date / desfase).
+function toDate(s){
+  if (typeof s !== "string") return new Date(s);
+  s = s.trim().replace(" ", "T").replace(/([+-]\d{2})(\d{2})?$/, (_,h,m)=>h+":"+(m||"00"));
+  return new Date(s);
+}
 function rel(iso){
-  const s = (Date.now() - new Date(iso).getTime())/1000;
+  const s = (Date.now() - toDate(iso).getTime())/1000;
   if (s < 90) return "hace 1 min";
   if (s < 3600) return "hace " + Math.round(s/60) + " min";
   if (s < 86400) return "hace " + (s/3600).toFixed(s<7200?1:0).replace(".0","") + " h";
@@ -189,7 +196,7 @@ function render(dash){
   const ventures = Object.keys(est).filter(k => k !== "global").map(k => ({slug:k, ...est[k]}));
 
   // Driver salud: kill switch > atraso > ok
-  const mins = g.ultima_corrida ? (Date.now() - new Date(g.ultima_corrida).getTime())/60000 : null;
+  const mins = g.ultima_corrida ? (Date.now() - toDate(g.ultima_corrida).getTime())/60000 : null;
   if (g.kill_switch) setDriver("bad", "Kill switch ACTIVO");
   else if (mins != null && mins > 130) setDriver("warn", "Driver atrasado (" + Math.round(mins/60) + " h sin correr)");
   else setDriver("ok", "Driver activo");
