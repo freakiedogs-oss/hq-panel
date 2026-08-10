@@ -208,9 +208,21 @@ function render(dash){
   $("k-gates").textContent = gates.length;
   $("k-ready").textContent = ventures.filter(v => (v.fase|0) >= 5).length + " / " + ventures.length;
 
+  const allIdeas = dash.ideas || [], allEvs = dash.eventos || [];
+  // Idea que originó el venture: título de la idea empieza con el nombre del venture
+  const ideaOf = v => allIdeas.find(i => (i.titulo||"").toLowerCase().startsWith((v.nombre||v.slug||"").toLowerCase().split(" ")[0]));
   $("ventures").innerHTML = ventures.map(v => {
     const fase = v.fase|0, done = v.checklist_done|0, total = v.checklist_total|0;
     const pct = total ? Math.round(done/total*100) : 0;
+    const idea = ideaOf(v);
+    const vevs = allEvs.filter(e => e.venture === v.slug);
+    const detalle = [
+      v.producto ? `<b>Qué hace:</b> ${esc(v.producto)}`
+        : (idea ? `<b>Tesis / qué hace:</b> ${esc(idea.resumen)}` : ""),
+      v.plan_mercado ? `<b>Plan a mercado:</b> ${esc(v.plan_mercado)}` : "",
+      idea && idea.informe ? `<b>Análisis del lab${idea.confianza!=null?" ("+(idea.confianza|0)+"%)":""}:</b>\n${esc(idea.informe)}` : "",
+      `<b>Historial (${vevs.length} eventos):</b>\n${vevs.length ? vevs.map(e=>`• ${rel(e.ts)} · ${esc(e.tipo)} · ${esc(e.detalle)}`).join("\n") : "sin eventos registrados aún"}`
+    ].filter(Boolean).join("\n\n");
     return `<div class="vcard">
       <div class="vhead"><h2>${esc(v.nombre || v.slug)}</h2>
         <span class="fase ${fase>=5?"done":""}">${fase>=5?"🎉 READY":"Fase "+fase+" · "+esc(FASES[fase]||"")}</span></div>
@@ -224,6 +236,7 @@ function render(dash){
         <div class="r"><span class="lbl">Próximo foco</span>${esc(v.proximo_foco || "—")}</div>
       </div>
       ${v.url ? `<div class="vurl"><a href="${esc(v.url)}" target="_blank" rel="noopener">Ver deploy ↗</a></div>` : ""}
+      <details class="inf"><summary>Análisis del lab · plan · historial</summary><div>${detalle}</div></details>
     </div>`;
   }).join("") || `<p class="empty">Sin ventures registrados aún.</p>`;
 
