@@ -334,7 +334,7 @@ async function decide(id, nuevo, btn){
     });
     const j = await r.json();
     if (!r.ok || !j.ok) throw new Error(j.error || ("HTTP " + r.status));
-    if (j.ya_decidida) banner("Esa idea ya fue decidida en otro lado — refrescando.");
+    if (j.ya_decidida) banner("El backend NO aplicó el cambio: solo permite la primera decisión (evaluada→…). Re-decidir una idea ya encolada/guardada/descartada requiere actualizar la edge function factory-dashboard.", true);
     await fetchData();
   } catch(e){
     card.querySelectorAll("button").forEach(b => b.disabled = false);
