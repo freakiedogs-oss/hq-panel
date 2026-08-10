@@ -210,7 +210,8 @@ function render(dash){
 
   const allIdeas = dash.ideas || [], allEvs = dash.eventos || [];
   // Idea que originó el venture: título de la idea empieza con el nombre del venture
-  const ideaOf = v => allIdeas.find(i => (i.titulo||"").toLowerCase().startsWith((v.nombre||v.slug||"").toLowerCase().split(" ")[0]));
+  const ideaOf = v => (v.idea_id && allIdeas.find(i => i.id === v.idea_id))
+    || allIdeas.find(i => (i.titulo||"").toLowerCase().startsWith((v.nombre||v.slug||"").toLowerCase().split(" ")[0]));
   $("ventures").innerHTML = ventures.map(v => {
     const fase = v.fase|0, done = v.checklist_done|0, total = v.checklist_total|0;
     const pct = total ? Math.round(done/total*100) : 0;
