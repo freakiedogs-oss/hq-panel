@@ -51,7 +51,8 @@ Deno.serve(async (req) => {
     if (lineas.length < PAGINA) break;
   }
 
-  const resultado = { ok: true, desde, local: local.data, remotas, paginas, ms: Date.now() - t0 };
+  const ref = await sb.rpc("compras_hq_refrescar");
+  const resultado = { ok: true, desde, local: local.data, remotas, paginas, refresco: ref.error ? ref.error.message : "ok", ms: Date.now() - t0 };
   await sb.rpc("compras_hq_log_sync", { p_origen: esServicio ? "servicio" : "cron", p_resultado: resultado });
   return json(resultado);
 });

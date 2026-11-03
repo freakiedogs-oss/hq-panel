@@ -4,6 +4,20 @@
 
 ---
 
+## 2026-11-03 — Compras HQ: gateway único, catálogo maestro y pantalla `compras.html`
+
+Plan completo y decisiones: `~/Proyectos/_auditorias/COMPRAS-HQ-plan-2026-10-29.md`. Decisión de Jose: **un solo gateway, vistas independientes por empresa**.
+
+- **Datos (btbox, schema `compras_hq`, no expuesto a la API):** `linea` junta las compras de las 5 empresas (Freakie DTE + BEES, Kaeru, Kako por SQL local; Eatalia y Scanzano desde wzk). `item` + `alias` traducen cada descripción de factura (por NIT) a un item con su tamaño en kg, l o unidad. `mv_precio` precalcula precio por unidad base y marca atípicos (más de 5x de la mediana). Vistas: `v_item_proveedor`, `v_comparativo`, `v_ahorro`, `v_alerta_precio`.
+- **Sincronización:** edge fn `compras-hq-sync` (btbox), cron `compras-hq-sync` a las 3:53 y 15:53 SV. Trae Eatalia/Scanzano desde la edge fn `compras-export` (wzk). Sin secreto compartido: wzk le pregunta a btbox si la llave que recibió es su service_role.
+- **Gateway:** edge fn `compras-gateway` (btbox). El token va en el link (`?t=`); la base guarda solo su SHA-256 en `compras_hq.acceso`. Token de empresa = solo sus compras (el parámetro `empresa` se ignora). Token HQ = todas, filtro por empresa y pestaña Revisar (confirmar o corregir alias). Al confirmar se refresca `mv_precio`.
+- **Tokens:** `~/.config/compras-hq/tokens.tsv` y `links.txt` en la mini (600). Nunca en git: el repo es público por GitHub Pages.
+- **Pantalla:** `compras.html` (mismo estilo que `index.html`). Probada con Playwright de `~/Proyectos/provia` en iPhone 13 claro y oscuro: sin errores ni scroll horizontal; aislamiento verificado (Kaeru no ve Freakie aunque lo pida).
+- **Repo público:** los lotes de semillas con NIT de proveedores viven en `~/Proyectos/_auditorias/compras_hq_semillas/`, no acá. El commit 8f80cc4 alcanzó a subir `005_semilla_lote1.sql` (NITs sin nombres, 3 de personas naturales); se borró en el siguiente commit pero sigue en el historial.
+- **Ojo MCP:** `apply_migration` y DML suelto se cuelgan en sesiones remotas; todo se aplicó con `execute_sql` y los UPDATE dentro de funciones.
+
+---
+
 ## 2026-08-18 — Se crea esta memoria (y por qué faltaba)
 
 `hq-panel` era el único de los 8 repos **sin `CLAUDE.md` ni `memoria.md`**. Consecuencia real: una sesión de Claude que arrancó acá no tenía ritual ni contexto y tuvo que reconstruir todo desde `git log` y transcripts viejos.

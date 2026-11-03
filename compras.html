@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Compras HQ</title>
+<style>
+  :root{
+    --bg:#F2F3F5; --card:#FFFFFF; --ink:#1B2129; --muted:#5C6572; --line:#E1E4E9;
+    --accent:#B96E00; --accent-soft:#F3E3C8;
+    --ok:#237E56; --ok-soft:#DDF0E6; --warn:#996E00; --warn-soft:#F5EBCC; --bad:#B23A3A; --bad-soft:#F6DEDE;
+    --rail:#D8DBE0;
+  }
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+    --bg:#12151A; --card:#1A1F27; --ink:#E8EAED; --muted:#98A1AD; --line:#2A313C;
+    --accent:#F0A63C; --accent-soft:#3A2E17;
+    --ok:#46C489; --ok-soft:#16331F; --warn:#E5B458; --warn-soft:#38301A; --bad:#E77C7C; --bad-soft:#3A2020;
+    --rail:#2A313C;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#12151A; --card:#1A1F27; --ink:#E8EAED; --muted:#98A1AD; --line:#2A313C;
+    --accent:#F0A63C; --accent-soft:#3A2E17;
+    --ok:#46C489; --ok-soft:#16331F; --warn:#E5B458; --warn-soft:#38301A; --bad:#E77C7C; --bad-soft:#3A2020;
+    --rail:#2A313C;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,"Segoe UI",Roboto,sans-serif;margin:0;padding:16px}
+  .wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
+  .lbl{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .muted{color:var(--muted)}
+  header{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  header h1{font-size:20px;font-weight:700;margin:0;letter-spacing:-.01em}
+  .spacer{flex:1}
+  .stamp{font-size:12px;color:var(--muted)}
+  button{font:inherit;color:inherit}
+  .theme{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer}
+  .banner{border:1px solid var(--line);border-left:3px solid var(--warn);background:var(--card);border-radius:8px;padding:10px 14px;font-size:13px;display:none}
+  .banner.bad{border-left-color:var(--bad)}
+  .banner.ok{border-left-color:var(--ok)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:4px 12px;font-size:13px;cursor:pointer}
+  .chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+  .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  @media (min-width:640px){.kpis{grid-template-columns:repeat(4,1fr)}}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+  .kpi b{font-size:22px;font-weight:600;letter-spacing:-.02em}
+  .kpi small{font-size:12px;color:var(--muted)}
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+  .tab{background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;font-size:14px;cursor:pointer;color:var(--muted);white-space:nowrap}
+  .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+  .list{display:flex;flex-direction:column;gap:10px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+  .card h3{margin:0;font-size:15px;font-weight:650;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .card h3 .emp{font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.06em}
+  .row{display:flex;justify-content:space-between;gap:10px;font-size:13px;align-items:baseline}
+  .row span:first-child{color:var(--muted);min-width:0;overflow-wrap:anywhere}
+  .big{font-size:18px;font-weight:650}
+  .tag{display:inline-block;border-radius:6px;padding:1px 7px;font-size:12px;font-weight:600}
+  .tag.bad{background:var(--bad-soft);color:var(--bad)}
+  .tag.ok{background:var(--ok-soft);color:var(--ok)}
+  .tag.warn{background:var(--warn-soft);color:var(--warn)}
+  .link{background:none;border:0;padding:0;color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;text-align:left}
+  .prov{display:grid;grid-template-columns:1fr auto auto;gap:4px 10px;font-size:13px;align-items:center}
+  .prov .n{min-width:0;overflow-wrap:anywhere}
+  .prov .best{color:var(--ok);font-weight:600}
+  .bar{height:5px;border-radius:3px;background:var(--rail);overflow:hidden;grid-column:1/-1}
+  .bar i{display:block;height:100%;background:var(--bad)}
+  .bar i.best{background:var(--ok)}
+  .rev input{width:110px;font:inherit;font-size:14px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+  .rev .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .btn{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:5px 12px;font-size:13px;cursor:pointer}
+  .btn.ok{border-color:var(--ok);color:var(--ok)}
+  .btn.bad{border-color:var(--bad);color:var(--bad)}
+  .btn:disabled{opacity:.5}
+  .empty{color:var(--muted);font-size:14px;padding:20px 0;text-align:center}
+  dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);padding:16px;max-width:min(560px,calc(100vw - 32px));width:100%}
+  dialog::backdrop{background:rgba(0,0,0,.45)}
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th,td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  td.r,th.r{text-align:right}
+  .tablewrap{overflow-x:auto}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 id="titulo">Compras</h1>
+    <span class="spacer"></span>
+    <span class="stamp" id="stamp"></span>
+    <button class="theme" id="theme" type="button">Tema</button>
+  </header>
+  <div class="banner" id="banner" role="status"></div>
+  <div class="chips" id="empresas" hidden></div>
+  <section class="kpis" id="kpis" aria-label="Resumen"></section>
+  <nav class="tabs" role="tablist" id="tabs">
+    <button class="tab" role="tab" data-tab="ahorro" aria-selected="true">Ahorro</button>
+    <button class="tab" role="tab" data-tab="comparativo" aria-selected="false">Comparativo</button>
+    <button class="tab" role="tab" data-tab="alertas" aria-selected="false">Alertas</button>
+    <button class="tab" role="tab" data-tab="revision" aria-selected="false" hidden id="tabRev">Revisar</button>
+  </nav>
+  <section class="list" id="panel" aria-live="polite"></section>
+  <p class="note">Precios sin IVA por unidad base (kg, l o unidad). El ahorro compara lo pagado en los últimos 90 días contra el mejor precio observado del mismo item. Lo propuesto por la IA está sin confirmar.</p>
+</div>
+
+<dialog id="dlg">
+  <div style="display:flex;align-items:baseline;gap:10px">
+    <h3 id="dlgT" style="margin:0;font-size:16px"></h3><span class="spacer"></span>
+    <button class="btn" type="button" onclick="document.getElementById('dlg').close()">Cerrar</button>
+  </div>
+  <div id="dlgB" class="tablewrap" style="margin-top:10px"></div>
+</dialog>
+
+<script>
+"use strict";
+const API = "https://btboxlwfqcbrdfrlnwln.supabase.co/functions/v1/compras-gateway";
+const TOKEN = new URLSearchParams(location.search).get("t") || "";
+const S = { hq:false, empresa:"", tab:"ahorro", resumen:null, cache:{} };
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const usd = new Intl.NumberFormat("es-SV", { style:"currency", currency:"USD", maximumFractionDigits:0 });
+const usd2 = new Intl.NumberFormat("es-SV", { style:"currency", currency:"USD", minimumFractionDigits:2, maximumFractionDigits:2 });
+const num = (n, d=2) => n == null ? "—" : Number(n).toLocaleString("es-SV", { maximumFractionDigits:d });
+const precio = (n, u) => n == null ? "—" : usd2.format(n) + "/" + esc(u || "u");
+const pct = (n) => n == null ? "—" : (n > 0 ? "+" : "") + num(n, 1) + "%";
+const EMPRESA = { freakie:"Freakie", kaeru:"Kaeru", kako:"Kako", eatalia:"Eatalia", scanzano:"Scanzano" };
+// unidades de Hacienda (CAT-014) más comunes
+const UMH = { "59":"unidad", "36":"libra", "34":"kg", "39":"gramo", "38":"onza", "22":"galón", "23":"litro", "26":"ml", "58":"docena", "57":"ciento", "55":"millar", "32":"quintal", "33":"arroba", "99":"otra" };
+const unidadFactura = (u) => u == null ? "—" : (UMH[u] ? UMH[u] + " (" + u + ")" : u);
+// fechas de Postgres: se formatean como texto, sin pasar por Date (Safari)
+function fecha(s){ if(!s) return "—"; const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[3]}/${m[2]}/${m[1]}` : esc(s); }
+function fechaHora(s){
+  if(!s) return "—";
+  const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+  if(!m) return esc(s);
+  // UTC → El Salvador (UTC-6, sin horario de verano)
+  const d = new Date(Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5]) - 6*3600e3);
+  const p = (x) => String(x).padStart(2,"0");
+  return `${p(d.getUTCDate())}/${p(d.getUTCMonth()+1)} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
+}
+
+function banner(msg, kind){ const b = $("banner"); if(!msg){ b.style.display="none"; return; } b.className = "banner " + (kind||""); b.textContent = msg; b.style.display="block"; }
+
+async function api(accion, params={}, post=false){
+  const p = { t:TOKEN, accion, ...params };
+  if (S.hq && S.empresa && !("empresa" in params)) p.empresa = S.empresa;
+  const r = post
+    ? await fetch(API, { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify(p), cache:"no-store" })
+    : await fetch(API + "?" + new URLSearchParams(p), { cache:"no-store" });
+  const j = await r.json().catch(() => ({ error:"respuesta_invalida" }));
+  if (r.status === 401) throw new Error("Token inválido. Revisá que el link tenga ?t=…");
+  if (j.error) throw new Error(j.error === "solo_hq" ? "Solo el acceso de HQ puede hacer esto." : "El servidor respondió: " + j.error + (j.detalle ? " (" + j.detalle + ")" : ""));
+  return j;
+}
+
+function kpis(k){
+  const cards = [
+    ["Gasto en insumos", usd.format(k.gasto_insumos_90d || 0), "últimos 90 días"],
+    ["Ahorro potencial", usd.format(k.ahorro_90d || 0), "90 días al mejor precio"],
+    ["Mapeado", (k.pct_mapeado ?? "—") + "%", "del gasto en insumos"],
+    ["Alertas de alza", String(k.alertas ?? 0), "subidas de más de 8%"],
+  ];
+  $("kpis").innerHTML = cards.map(([l,b,s]) => `<div class="kpi"><span class="lbl">${l}</span><b class="mono">${b}</b><small>${s}</small></div>`).join("");
+}
+
+function chipsEmpresas(list){
+  const c = $("empresas");
+  if(!S.hq){ c.hidden = true; return; }
+  c.hidden = false;
+  const opts = [{ id:"", nombre:"Todas" }, ...list];
+  c.innerHTML = opts.map(o => `<button class="chip" type="button" data-e="${esc(o.id)}" aria-pressed="${o.id===S.empresa}">${esc(o.nombre)}</button>`).join("");
+  c.querySelectorAll(".chip").forEach(b => b.onclick = () => { S.empresa = b.dataset.e; S.cache = {}; cargar(); });
+}
+
+function empTag(e){ return S.hq && e ? `<span class="emp">${esc(e.split(",").map(x => EMPRESA[x] || x).join(" · "))}</span>` : ""; }
+
+function vistaAhorro(){
+  const rows = S.resumen.ahorro || [];
+  if(!rows.length) return `<div class="empty">Sin ahorros detectados en items con más de un proveedor.</div>`;
+  return rows.map(a => `
+    <article class="card">
+      <h3>${esc(a.item)} ${empTag(a.empresa)}</h3>
+      <div class="row"><span>Ahorro posible en 90 días</span><span class="big mono">${usd.format(a.ahorro_90d)}</span></div>
+      <div class="row"><span>Pagado</span><span class="mono">${precio(a.precio_pagado, a.unidad_base)} <span class="tag bad">${pct(a.sobreprecio_pct)}</span></span></div>
+      <div class="row"><span>Mejor precio · ${esc(a.mejor_proveedor)}</span><span class="mono">${precio(a.mejor_precio, a.unidad_base)}</span></div>
+      <div class="row"><span>Gasto 90 días</span><span class="mono">${usd.format(a.gasto_90d)}</span></div>
+      <button class="link" type="button" data-item="${a.item_id}" data-n="${esc(a.item)}" data-u="${esc(a.unidad_base)}">Ver historia de precios</button>
+    </article>`).join("");
+}
+
+function vistaAlertas(){
+  const rows = S.resumen.alertas || [];
+  if(!rows.length) return `<div class="empty">Sin alzas de precio en los últimos 30 días.</div>`;
+  return rows.map(a => `
+    <article class="card">
+      <h3>${esc(a.item)} ${empTag(a.empresa)}</h3>
+      <div class="row"><span>${esc(a.proveedor)} · ${fecha(a.ultima_compra)}</span><span class="tag warn">${pct(a.alza_pct)}</span></div>
+      <div class="row"><span>Última compra</span><span class="mono">${precio(a.ultimo_precio, a.unidad_base)}</span></div>
+      <div class="row"><span>Mediana 90 días</span><span class="mono">${precio(a.mediana_90d, a.unidad_base)}</span></div>
+      <button class="link" type="button" data-item="${a.item_id}" data-n="${esc(a.item)}" data-u="${esc(a.unidad_base)}">Ver historia de precios</button>
+    </article>`).join("");
+}
+
+function vistaComparativo(items){
+  if(!items.length) return `<div class="empty">Todavía no hay items comparables.</div>`;
+  const g = new Map();
+  for (const r of items){ if(!g.has(r.item_id)) g.set(r.item_id, []); g.get(r.item_id).push(r); }
+  return [...g.values()].map(rs => {
+    const a = rs[0];
+    const max = Math.max(...rs.map(r => r.dif_pct || 0), 1);
+    const mejorPropio = rs.some(r => (r.dif_pct || 0) <= 0.5);
+    const ref = mejorPropio ? "" : `<div class="row"><span>Mejor del grupo · ${esc(a.mejor_proveedor_grupo)}</span><span class="mono best">${precio(a.mejor_grupo, a.unidad_base)}</span></div>`;
+    return `<article class="card">
+      <h3>${esc(a.item)} <span class="muted" style="font-size:12px;font-weight:400">${esc(a.categoria || "")}</span></h3>
+      <div class="prov">
+        ${rs.map(r => {
+          const best = (r.dif_pct || 0) <= 0.5;
+          return `<span class="n">${esc(r.proveedor)} ${empTag(r.empresas)}</span>
+                  <span class="mono ${best ? "best" : ""}">${precio(r.precio, r.unidad_base)}</span>
+                  <span class="mono">${best ? '<span class="tag ok">mejor</span>' : '<span class="tag bad">' + pct(r.dif_pct) + '</span>'}</span>
+                  <div class="bar"><i class="${best ? "best" : ""}" style="width:${best ? 100 : Math.min(100, 100 * (r.dif_pct || 0) / max)}%"></i></div>`;
+        }).join("")}
+      </div>
+      ${ref}
+      <div class="row"><span>Gasto 12 meses</span><span class="mono">${usd.format(rs.reduce((s,r) => s + Number(r.gasto_12m || 0), 0))}</span></div>
+      <button class="link" type="button" data-item="${a.item_id}" data-n="${esc(a.item)}" data-u="${esc(a.unidad_base)}">Ver historia de precios</button>
+    </article>`;
+  }).join("");
+}
+
+function vistaRevision(alias){
+  if(!alias.length) return `<div class="empty">No hay mapeos pendientes de revisar.</div>`;
+  return `<p class="note">Cada fila dice qué item es esa descripción de factura y cuántas unidades base trae una unidad facturada. Corregí el número si hace falta y confirmá.</p>` +
+  alias.map(a => `
+    <article class="card rev" id="al${a.alias_id}">
+      <h3>${esc(a.item)} <span class="muted" style="font-size:12px;font-weight:400">${esc(a.unidad_base)}</span></h3>
+      <div class="row"><span>${esc(a.proveedor)}</span><span class="mono">${usd.format(a.gasto_12m || 0)}</span></div>
+      <div class="row"><span style="color:var(--ink)">“${esc(a.descripcion)}”</span><span class="muted">factura por ${esc(unidadFactura(a.unidad_factura))}</span></div>
+      ${a.notas ? `<div class="note">${esc(a.notas)}</div>` : ""}
+      <div class="acts">
+        <label class="note">${esc(a.unidad_base)} por unidad facturada
+          <input type="number" inputmode="decimal" step="any" min="0" value="${a.base_por_unidad ?? ""}" placeholder="falta" aria-label="Unidades base por unidad facturada">
+        </label>
+        <button class="btn ok" type="button" data-a="${a.alias_id}" data-s="confirmado">Confirmar</button>
+        <button class="btn bad" type="button" data-a="${a.alias_id}" data-s="rechazado">No es este item</button>
+      </div>
+    </article>`).join("");
+}
+
+async function historia(itemId, nombre, unidad){
+  $("dlgT").textContent = nombre;
+  $("dlgB").innerHTML = `<div class="empty">Cargando…</div>`;
+  $("dlg").showModal();
+  try{
+    const { historia } = await api("item", { item_id:itemId });
+    if(!historia.length){ $("dlgB").innerHTML = `<div class="empty">Sin compras en 12 meses.</div>`; return; }
+    $("dlgB").innerHTML = `<table><thead><tr><th>Mes</th><th>Proveedor</th><th class="r">Precio</th><th class="r">Cantidad</th></tr></thead><tbody>${
+      historia.slice().reverse().map(h => `<tr><td class="mono">${esc(h.mes)}</td><td>${esc(h.proveedor)} ${empTag(h.empresas)}</td><td class="r mono">${precio(h.precio, unidad)}</td><td class="r mono">${num(h.cantidad, 1)} ${esc(unidad)}</td></tr>`).join("")
+    }</tbody></table>`;
+  }catch(e){ $("dlgB").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+
+async function confirmar(btn){
+  const card = btn.closest(".rev");
+  const base = card.querySelector("input").value.trim();
+  if (btn.dataset.s === "confirmado" && !base){ banner("Falta el tamaño: poné cuántas unidades base trae una unidad facturada.", "bad"); return; }
+  card.querySelectorAll("button").forEach(b => b.disabled = true);
+  try{
+    await api("confirmar", { alias_id:btn.dataset.a, estado:btn.dataset.s, base_por_unidad: btn.dataset.s === "confirmado" ? base : "" }, true);
+    card.remove();
+    S.cache = {};
+    banner(btn.dataset.s === "confirmado" ? "Guardado y confirmado." : "Marcado como que no es ese item.", "ok");
+  }catch(e){
+    card.querySelectorAll("button").forEach(b => b.disabled = false);
+    banner("No se guardó: " + e.message, "bad");
+  }
+}
+
+async function pintar(){
+  const p = $("panel");
+  if (S.tab === "ahorro") p.innerHTML = vistaAhorro();
+  else if (S.tab === "alertas") p.innerHTML = vistaAlertas();
+  else {
+    p.innerHTML = `<div class="empty">Cargando…</div>`;
+    try{
+      if (S.tab === "comparativo"){ S.cache.comp ??= (await api("comparativo")).items; p.innerHTML = vistaComparativo(S.cache.comp); }
+      if (S.tab === "revision"){ S.cache.rev ??= (await api("revision", { empresa:"" })).alias; p.innerHTML = vistaRevision(S.cache.rev); }
+    }catch(e){ p.innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+  }
+  p.querySelectorAll("[data-item]").forEach(b => b.onclick = () => historia(b.dataset.item, b.dataset.n, b.dataset.u));
+  p.querySelectorAll("[data-a]").forEach(b => b.onclick = () => confirmar(b));
+}
+
+async function cargar(){
+  if(!TOKEN){ banner("Falta el token en el link (?t=…).", "bad"); return; }
+  $("panel").innerHTML = `<div class="empty">Cargando…</div>`;
+  try{
+    const r = await api("resumen");
+    S.resumen = r; S.hq = !!r.acceso.hq;
+    $("titulo").textContent = "Compras · " + (S.hq ? (S.empresa ? (EMPRESA[S.empresa] || S.empresa) : "Todas las empresas") : r.acceso.nombre);
+    $("stamp").textContent = "Sincronizado " + fechaHora(r.kpi.ultima_sync);
+    $("tabRev").hidden = !S.hq;
+    chipsEmpresas(r.empresas || []);
+    kpis(r.kpi || {});
+    banner("");
+    pintar();
+  }catch(e){ banner(e.message, "bad"); $("panel").innerHTML = ""; }
+}
+
+$("tabs").addEventListener("click", (ev) => {
+  const t = ev.target.closest(".tab"); if(!t) return;
+  S.tab = t.dataset.tab;
+  document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", String(x === t)));
+  pintar();
+});
+(function tema(){
+  const k = "compras-tema"; let v = null; try{ v = localStorage.getItem(k); }catch(_){}
+  if (v) document.documentElement.dataset.theme = v;
+  $("theme").onclick = () => {
+    const actual = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    const now = actual === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = now; try{ localStorage.setItem(k, now); }catch(_){}
+  };
+})();
+cargar();
+</script>
+</body>
+</html>
